@@ -16,6 +16,7 @@ Abra no Chrome, entre com sua conta e use o menu **Instalar aplicativo** ou **Ad
 - Identificação do responsável técnico, CREA, RNP e ART.
 - Checklist por ambiente com OK, NC e N/A.
 - Descrição da não conformidade, localização e correção recomendada.
+- Catálogo com 22 referências, filtro por serviço e problema, busca por número ou palavra e resumos para seleção rápida. Consulte as fontes e o escopo em [docs/NORMAS.md](docs/NORMAS.md).
 - Até 10 referências normativas por não conformidade, com norma, edição, item/seção e fundamentação técnica, incluídas no relatório e no PDF. O responsável técnico registra as referências consultadas e confirma sua aplicabilidade; o app não atribui infrações automaticamente.
 - Câmera ao vivo, captura, prévia, confirmação e seleção de fotos da galeria.
 - Relatórios em PDF com registros fotográficos e conteúdo técnico.

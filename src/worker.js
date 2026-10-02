@@ -26,6 +26,8 @@ function validate(doc) {
         if(!ref||typeof ref!=='object'||Array.isArray(ref))throw new Error('Referência normativa inválida.');
         const clean={};
         for(const [field,max] of [['standard',300],['edition',100],['clause',300],['justification',4000]]){const value=ref[field]??'';if(typeof value!=='string'||value.length>max)throw new Error('Referência normativa inválida.');clean[field]=value;}
+        for(const [field,max] of [['catalogId',100],['summary',1500],['source',500]])if(ref[field]!==undefined){if(typeof ref[field]!=='string'||ref[field].length>max)throw new Error('Referência normativa inválida.');clean[field]=ref[field];}
+        if(clean.source){const url=new URL(clean.source);if(url.protocol!=='https:'||!['www.abntcatalogo.com.br','www.target.com.br','www.normas.com.br','buscanormas.com.br','www.iso.org'].includes(url.hostname))throw new Error('Fonte da referência inválida.');}
         return clean;
       });
       return {id:item.id.slice(0,100),title:item.title,hint:item.hint,status:item.status,notes:item.notes,severity:item.severity,nonconformity:item.nonconformity??'',location:item.location??'',recommendation:item.recommendation??'',normativeReferences};
