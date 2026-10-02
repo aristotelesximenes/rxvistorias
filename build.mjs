@@ -1,0 +1,15 @@
+import { readFile, writeFile, mkdir, cp } from 'node:fs/promises';
+const html=await readFile('src/index.html','utf8');
+const client=await readFile('src/app.js','utf8');
+const branding=await readFile('src/brand.js','utf8');
+const camera=await readFile('src/camera.js','utf8');
+const pdf=await readFile('src/pdf.js','utf8');
+const vendor=await readFile('node_modules/jspdf/dist/jspdf.umd.min.js','utf8');
+const css=await readFile('src/style.css','utf8');
+const page=html.replace('/* APP_STYLE */',css).replace('/* APP_SCRIPT */',()=>branding+'\n'+camera+'\n'+client+'\n'+pdf).replace('/* PDF_VENDOR */',()=>vendor.replace(/<\/script/gi,'<\\/script'));
+const worker=(await readFile('src/worker.js','utf8')).replace('__HTML__',JSON.stringify(page));
+await mkdir('dist/server',{recursive:true});
+await writeFile('dist/server/index.js',worker);
+await cp('.openai/hosting.json','dist/server/hosting.json');
+await writeFile('dist/server/wrangler.json',JSON.stringify({name:'vistoria-local',main:'index.js',compatibility_date:'2026-01-01',d1_databases:[{binding:'DB',database_name:'vistoria-local',database_id:'local-preview-db',migrations_dir:'../../drizzle'}],r2_buckets:[{binding:'BUCKET',bucket_name:'vistoria-photos-local'}]},null,2));
+console.log('App pronto em dist/server/index.js');

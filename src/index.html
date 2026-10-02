@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111111">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="description" content="Organize suas vistorias de recebimento de imóveis, confira cada ambiente e registre pendências com fotos.">
+  <title>RX Engenharia e Projetos • Vistorias</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23151515'/%3E%3Cpath d='M7 15 16 7l9 8v10H7Z' fill='none' stroke='%23fa8b18' stroke-width='2.5'/%3E%3Cpath d='m11 18 3 3 7-7' fill='none' stroke='%23fa8b18' stroke-width='2.5'/%3E%3C/svg%3E">
+  <style>/* APP_STYLE */</style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <a class="brand" href="#" data-action="home" aria-label="RX Engenharia e Projetos — Minhas vistorias"><span class="rx-brand-name">RX<span>ENGENHARIA E PROJETOS</span></span></a>
+      <div class="sidebar-label">VISTORIAS DE IMÓVEIS</div>
+      <button class="nav-item active" data-action="home"><span data-icon="clipboard"></span>Minhas vistorias</button>
+      <button class="sidebar-new" data-action="new"><span data-icon="plus"></span>Nova vistoria</button>
+      <button class="sidebar-brand-settings" data-action="brand-settings"><span data-icon="building"></span>Identidade visual</button>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-label">RECENTES</div>
+      <div id="recent-list"><div class="sidebar-empty">Suas vistorias aparecerão aqui.</div></div>
+      <div class="sidebar-foot"><div class="sidebar-copyright"></div></div>
+    </aside>
+    <div class="main-shell">
+      <header class="topbar"><div class="breadcrumb" id="breadcrumb">Minhas vistorias</div><div class="topbar-tools"><button class="mobile-brand-settings icon-button" data-action="brand-settings" aria-label="Identidade visual da empresa"><span data-icon="building"></span></button><div class="topbar-note"><span data-icon="shield"></span>Seu espaço privado</div></div></header>
+      <main id="main"><div class="loading"><span class="spinner"></span>Carregando suas vistorias…</div></main>
+      <footer class="app-copyright"></footer>
+    </div>
+  </div>
+  <dialog id="new-dialog" aria-labelledby="new-title">
+    <form id="new-form">
+      <div class="dialog-head"><div><span class="eyebrow">RECEBIMENTO DE IMÓVEL</span><h2 id="new-title">Nova vistoria</h2></div><button type="button" class="icon-button" aria-label="Fechar" data-action="close-new"><span data-icon="x"></span></button></div>
+      <div class="form-grid">
+        <label class="span-2">Empreendimento / imóvel <span class="required">*</span><input name="property" required maxlength="120" placeholder="Ex.: Residencial Aurora"></label>
+        <label>Tipo de imóvel <span class="required">*</span><select name="propertyType" required><option value="Apartamento">Apartamento</option><option value="Casa">Casa</option><option value="Imóvel comercial">Imóvel comercial</option><option value="Condomínio">Condomínio</option></select></label>
+        <label>Área construída (m²)<input name="area" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Ex.: 125,50"></label>
+        <label class="span-2">Endereço<input name="address" maxlength="300" placeholder="Rua, número, bairro e cidade"></label>
+        <label>Unidade / bloco<input name="unit" maxlength="120" placeholder="Ex.: Apto. 302 • Bloco B"></label>
+        <label>Data da vistoria <span class="required">*</span><input name="date" type="date" required></label>
+        <label>Responsável técnico<input name="inspector" maxlength="200" placeholder="Nome do engenheiro"></label>
+        <label>Nome do cliente<input name="owner" maxlength="200" placeholder="Nome do cliente"></label>
+        <label class="span-2">Construtora responsável pela execução<input name="builder" maxlength="200" placeholder="Nome da construtora / executora"></label>
+        <label>Tipo de recebimento<select name="type"><option value="construction">Após construção</option><option value="renovation">Após reforma</option></select></label>
+        <label>CREA / UF<input name="crea" maxlength="120" placeholder="Ex.: CREA-RJ 0000000000"></label>
+        <label>RNP<input name="rnp" maxlength="120" placeholder="Registro nacional profissional"></label>
+        <label>ART, se aplicável<input name="art" maxlength="120" placeholder="Número da ART"></label>
+      </div>
+      <fieldset class="room-fieldset"><legend>Ambientes do imóvel</legend><p>Você pode adicionar outros ambientes durante a vistoria.</p><div class="room-options" id="room-options"></div></fieldset>
+      <p id="new-error" class="form-error" role="alert"></p>
+      <div class="dialog-footer"><button type="button" class="button secondary" data-action="close-new">Cancelar</button><button type="submit" class="button primary" id="create-button"><span data-icon="plus"></span>Iniciar vistoria</button></div>
+    </form>
+  </dialog>
+  <dialog id="room-dialog" aria-labelledby="room-title"><form id="room-form"><div class="dialog-head"><h2 id="room-title">Adicionar ambiente</h2><button class="icon-button" type="button" aria-label="Fechar" data-action="close-room"><span data-icon="x"></span></button></div><label>Nome do ambiente<input name="name" required maxlength="80" placeholder="Ex.: Quarto 3, banheiro da suíte"></label><label class="mt">Checklist base<select name="template" id="template-options"></select></label><div class="dialog-footer"><button type="button" class="button secondary" data-action="close-room">Cancelar</button><button type="submit" class="button primary">Adicionar</button></div></form></dialog>
+  <dialog id="photo-dialog" aria-label="Foto da vistoria"><button class="icon-button photo-close" aria-label="Fechar foto" data-action="close-photo"><span data-icon="x"></span></button><img id="full-photo" alt="Foto registrada na vistoria"></dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-head"><h2 id="confirm-title">Remover foto?</h2></div><p>A foto será removida da vistoria e do relatório.</p><div class="dialog-footer"><button class="button secondary" data-action="cancel-delete">Manter foto</button><button class="button danger" id="confirm-delete">Remover foto</button></div></dialog>
+  <dialog id="brand-dialog" aria-labelledby="brand-title"><div class="dialog-head"><div><span class="eyebrow">RX ENGENHARIA E PROJETOS</span><h2 id="brand-title">Identidade visual</h2></div><button class="icon-button" aria-label="Fechar" data-action="close-brand"><span data-icon="x"></span></button></div><p class="brand-intro">Carregue as imagens originais da empresa. Elas serão usadas neste app e nos relatórios das vistorias.</p><div id="brand-assets"></div><div class="brand-legal"><strong>RX Engenharia e Projetos</strong><span>A X Campelo Engenharia</span><span>CNPJ 66.476.617/0001-96</span><p class="brand-copyright"></p></div><p class="brand-upload-error" role="alert" id="brand-upload-error"></p><div class="dialog-footer"><span class="brand-save-note">As imagens são salvas ao carregar.</span><button class="button primary" data-action="close-brand">Concluir</button></div></dialog>
+  <dialog id="camera-dialog" aria-labelledby="camera-title"><div class="dialog-head"><div><span class="eyebrow">REGISTRO FOTOGRÁFICO</span><h2 id="camera-title">Tirar foto</h2><p id="camera-location"></p></div><button class="icon-button" data-action="close-camera" aria-label="Fechar câmera"><span data-icon="x"></span></button></div><div class="camera-frame"><video id="camera-video" autoplay playsinline muted></video><img id="camera-preview" alt="Prévia da foto capturada" hidden><div id="camera-loading" class="camera-loading">Autorize o acesso à câmera para visualizar a imagem.</div></div><p id="camera-error" role="alert"></p><div class="camera-actions"><button class="button secondary" data-action="close-camera">Cancelar</button><button class="button secondary" data-action="retry-camera" id="camera-retry" hidden>Tentar novamente</button><button class="button secondary" data-action="retake-photo" id="camera-retake" hidden>Refazer</button><button class="button primary" data-action="capture-photo" id="camera-capture" disabled><span data-icon="camera"></span>Fotografar</button><button class="button primary" data-action="use-photo" id="camera-use" hidden><span data-icon="check"></span>Usar foto</button></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="print-report"></div>
+  <script>/* PDF_VENDOR */</script>
+  <script>/* APP_SCRIPT */</script>
+</body>
+</html>
