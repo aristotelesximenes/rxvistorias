@@ -27,7 +27,7 @@ async function authBody(request){
   if(!data||typeof data!=='object'||Array.isArray(data))throw new AuthError('Dados inválidos.');return data;
 }
 function cleanEmail(value){if(typeof value!=='string')throw new AuthError('Informe um e-mail válido.');const email=value.trim().toLowerCase();if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new AuthError('Informe um e-mail válido.');return email;}
-function checkPassword(value){if(typeof value!=='string'||value.length<12||value.length>128)throw new AuthError('Use uma senha com 12 a 128 caracteres.');return value;}
+function checkPassword(value){if(typeof value!=='string'||value.length<6||value.length>128)throw new AuthError('Use uma senha com 6 a 128 caracteres.');return value;}
 function profileFields(data){
   const result={};for(const [key,max] of [['name',200],['crea',120],['rnp',120],['phone',40]]){const value=data[key]??'';if(typeof value!=='string'||value.length>max)throw new AuthError('Confira os dados do perfil.');result[key]=value.trim();}
   if(result.name.length<2)throw new AuthError('Informe seu nome profissional.');return result;

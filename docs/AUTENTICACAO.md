@@ -1,6 +1,6 @@
 # Cadastro, perfis e privacidade
 
-Cada profissional cria uma conta com e-mail e senha de 12 a 128 caracteres. O perfil guarda nome profissional, CREA/UF, RNP e telefone opcional. Novas vistorias recebem esses dados; registros anteriores mantêm sua identificação histórica. O cadastro não valida registro profissional nem verifica a propriedade do e-mail por mensagem.
+Cada profissional cria uma conta com e-mail e senha de 6 a 128 caracteres, sem exigir símbolos, maiúsculas ou combinação de letras e números. Senhas somente com números, somente com letras ou com ambos são aceitas. O perfil guarda nome profissional, CREA/UF, RNP e telefone opcional. Novas vistorias recebem esses dados; registros anteriores mantêm sua identificação histórica. O cadastro não valida registro profissional nem verifica a propriedade do e-mail por mensagem.
 
 ## Autorização
 
