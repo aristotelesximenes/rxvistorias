@@ -6,3 +6,5 @@ reference/
 qa/
 qa-flow.mjs
 qa-*.mjs
+.dev.vars*
+.env*

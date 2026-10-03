@@ -15,6 +15,13 @@
       "when": 1790969805251,
       "tag": "0001_wonderful_screwball",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791031321143,
+      "tag": "0002_tidy_giant_girl",
+      "breakpoints": true
     }
   ]
 }

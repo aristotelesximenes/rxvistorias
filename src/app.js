@@ -27,7 +27,7 @@ const iconPaths={
 const icon=(name)=>`<svg viewBox="0 0 24 24" aria-hidden="true">${iconPaths[name]||iconPaths.house}</svg>`;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=selector=>document.querySelector(selector);
-const S={inspections:[],active:null,tab:'checklist',roomId:null,dirty:false,saving:false,saveError:'',savePromise:null,saveTimer:null,busyPhotos:0,deletePhoto:null,expanded:new Set()};
+const S={user:null,generation:0,inspections:[],active:null,tab:'checklist',roomId:null,dirty:false,saving:false,saveError:'',savePromise:null,saveTimer:null,busyPhotos:0,deletePhoto:null,expanded:new Set()};
 const statusText={pending:'Não verificado',ok:'Conforme',issue:'Não conforme',na:'Não se aplica'};
 const severityText={low:'Baixa',medium:'Média',high:'Alta'};
 const normFields=[['standard','Norma técnica',300],['edition','Ano / edição',100],['clause','Item / seção',300],['justification','Fundamentação técnica',4000]];
@@ -65,7 +65,7 @@ function stats(doc){const items=doc.rooms.flatMap(r=>r.items);return {total:item
 function dateText(date){return date?new Date(date+'T12:00:00').toLocaleDateString('pt-BR'):'Data não informada';}
 function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function iconsFill(){document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});}
-async function api(path,options={}){let response;try{response=await fetch(path,options);}catch{throw new Error('Sem conexão. Suas alterações continuam nesta tela. Tente salvar novamente.');}let data;try{data=await response.json();}catch{throw new Error('Não foi possível carregar os dados. Tente novamente.');}if(!response.ok)throw new Error(data.error||'Não foi possível salvar. Tente novamente.');return data;}
+async function api(path,options={}){let response;try{response=await fetch(path,options);}catch{throw new Error('Sem conexão. Suas alterações continuam nesta tela. Tente salvar novamente.');}let data;try{data=await response.json();}catch{throw new Error('Não foi possível carregar os dados. Tente novamente.');}if(!response.ok){const error=new Error(data.error||'Não foi possível salvar. Tente novamente.');error.status=response.status;if(response.status===401&&!['/api/auth/session','/api/auth/signup','/api/auth/login','/api/auth/owner-setup'].includes(path)&&typeof authExpired==='function')authExpired();throw error;}return data;}
 let toastTimer;function toast(message,error=false){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').className='toast visible'+(error?' error':'');toastTimer=setTimeout(()=>{$('#toast').className='toast';},error?8000:3800);}
 function recentRender(){const el=$('#recent-list');el.innerHTML=S.inspections.length?S.inspections.slice(0,6).map(d=>`<button class="recent ${S.active?.id===d.id?'current':''}" data-action="open" data-id="${esc(d.id)}" title="${esc(d.property)}">${esc(d.property)}</button>`).join(''):'<div class="sidebar-empty">Suas vistorias aparecerão aqui.</div>';}
 function renderHome(){
@@ -117,8 +117,8 @@ async function save(){
 }
 async function flush(){if(S.busyPhotos)throw new Error('Aguarde o envio das fotos terminar.');await save();if(S.dirty)await save();}
 function findItem(id){for(const room of S.active?.rooms||[]){const item=room.items.find(i=>i.id===id);if(item)return item;}throw new Error('Item não encontrado.');}
-async function load(){try{S.inspections=await api('/api/inspections');S.active=null;render();}catch(e){$('#main').innerHTML=`<div class="load-error">${icon('cloud')}<h2>Não foi possível carregar as vistorias</h2><p>${esc(e.message)}</p><button class="button primary" data-action="reload">${icon('refresh')}Tentar novamente</button></div>`;}}
-function showNew(){const form=$('#new-form');form.reset();form.elements.date.value=today();if(S.inspections[0])for(const key of ['inspector','crea','rnp'])form.elements[key].value=S.inspections[0][key]||'';$('#new-error').textContent='';$('#room-options').innerHTML=Object.keys(templates).map(name=>`<label class="room-option"><input type="checkbox" name="rooms" value="${esc(name)}" ${Object.keys(templates).indexOf(name)<16?'checked':''}>${esc(name)}</label>`).join('');$('#new-dialog').showModal();}
+async function load(){const generation=S.generation;try{const rows=await api('/api/inspections');if(generation!==S.generation||!S.user)return;S.inspections=rows;S.active=null;render();}catch(e){if(e.status===401||generation!==S.generation)return;$('#main').innerHTML=`<div class="load-error">${icon('cloud')}<h2>Não foi possível carregar as vistorias</h2><p>${esc(e.message)}</p><button class="button primary" data-action="reload">${icon('refresh')}Tentar novamente</button></div>`;}}
+function showNew(){const form=$('#new-form');form.reset();form.elements.date.value=today();if(S.user){form.elements.inspector.value=S.user.name;form.elements.crea.value=S.user.crea;form.elements.rnp.value=S.user.rnp;}$('#new-error').textContent='';$('#room-options').innerHTML=Object.keys(templates).map(name=>`<label class="room-option"><input type="checkbox" name="rooms" value="${esc(name)}" ${Object.keys(templates).indexOf(name)<16?'checked':''}>${esc(name)}</label>`).join('');$('#new-dialog').showModal();}
 async function printReport(){await flush();await loadCompanyBrand();$('#print-report').innerHTML=reportHTML(S.active);const imgs=[...$('#print-report').querySelectorAll('img')];await Promise.all(imgs.map(img=>img.decode().catch(()=>{throw new Error('Uma foto não carregou. Confira a conexão e tente gerar o relatório novamente.');})));await document.fonts.ready;window.print();}
 document.addEventListener('click',async event=>{
   const button=event.target.closest('[data-action]');if(!button)return;
@@ -202,7 +202,7 @@ $('#confirm-delete').addEventListener('click',async()=>{const id=S.deletePhoto;i
 window.addEventListener('beforeunload',event=>{if(S.dirty||S.saving||S.busyPhotos){event.preventDefault();event.returnValue='';}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&S.dirty)save().catch(()=>{});});
 $('#template-options').innerHTML=Object.keys(templates).map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join('');
-updateCompanyBrand();iconsFill();load();loadCompanyBrand().catch(()=>{});
+updateCompanyBrand();iconsFill();
 
 // Feature-detected browser tools use the same data and save action as the interface.
 const modelContext=document.modelContext;
@@ -211,11 +211,11 @@ if(modelContext?.registerTool){
   const tools=[{
     name:'read_inspection_summary',title:'Resumo da vistoria',description:'Lê o resumo da vistoria aberta, incluindo progresso e pendências.',
     inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},
-    execute(input){if(!input||typeof input!=='object'||Object.keys(input).length)throw new Error('Não envie parâmetros.');if(!S.active)throw new Error('Abra uma vistoria primeiro.');return {id:S.active.id,property:S.active.property,...stats(S.active),issues:S.active.rooms.flatMap(r=>r.items.filter(i=>i.status==='issue').map(i=>({itemId:i.id,room:r.name,title:i.title,notes:i.notes}))) };},
+    execute(input){if(!input||typeof input!=='object'||Object.keys(input).length)throw new Error('Não envie parâmetros.');if(!S.user||AUTH.expired)throw new Error('Entre na sua conta para continuar.');if(!S.active)throw new Error('Abra uma vistoria primeiro.');return {id:S.active.id,property:S.active.property,...stats(S.active),issues:S.active.rooms.flatMap(r=>r.items.filter(i=>i.status==='issue').map(i=>({itemId:i.id,room:r.name,title:i.title,notes:i.notes}))) };},
   },{
     name:'save_checklist_item',title:'Registrar condição de item',description:'Salva a condição de um item da vistoria aberta. Para pendências, informe a descrição.',
     inputSchema:{type:'object',properties:{itemId:{type:'string'},status:{type:'string',enum:['ok','issue','na','pending']},notes:{type:'string',maxLength:8000}},required:['itemId','status'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:true},
-    async execute(input){if(!input||typeof input!=='object'||Object.keys(input).some(k=>!['itemId','status','notes'].includes(k))||typeof input.itemId!=='string'||!['ok','issue','na','pending'].includes(input.status)||(input.notes!==undefined&&(typeof input.notes!=='string'||input.notes.length>8000)))throw new Error('Dados do item inválidos.');if(!S.active||S.active.completed)throw new Error('Abra uma vistoria em andamento.');if(input.status==='issue'&&!input.notes?.trim())throw new Error('Descreva a pendência.');await flush();const item=findItem(input.itemId);item.status=input.status;if(input.notes!==undefined)item.notes=input.notes;if(input.status==='issue'&&!item.nonconformity)item.nonconformity=input.notes.slice(0,500);changed();await save();render();return {itemId:item.id,status:item.status,saved:true};},
+    async execute(input){if(!S.user||AUTH.expired)throw new Error('Entre na sua conta para continuar.');if(!input||typeof input!=='object'||Object.keys(input).some(k=>!['itemId','status','notes'].includes(k))||typeof input.itemId!=='string'||!['ok','issue','na','pending'].includes(input.status)||(input.notes!==undefined&&(typeof input.notes!=='string'||input.notes.length>8000)))throw new Error('Dados do item inválidos.');if(!S.active||S.active.completed)throw new Error('Abra uma vistoria em andamento.');if(input.status==='issue'&&!input.notes?.trim())throw new Error('Descreva a pendência.');await flush();const item=findItem(input.itemId);item.status=input.status;if(input.notes!==undefined)item.notes=input.notes;if(input.status==='issue'&&!item.nonconformity)item.nonconformity=input.notes.slice(0,500);changed();await save();render();return {itemId:item.id,status:item.status,saved:true};},
   }];
   for(const tool of tools){try{Promise.resolve(modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}}
   window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});

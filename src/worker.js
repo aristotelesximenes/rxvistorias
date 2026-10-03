@@ -39,7 +39,7 @@ function validate(doc) {
   return result;
 }
 const database = env => {if(!env.DB) throw new Error('Armazenamento indisponível.');return env.DB;};
-async function record(env,id){return database(env).prepare('SELECT * FROM inspections WHERE id = ?').bind(id).first();}
+async function record(env,id,user){return database(env).prepare('SELECT * FROM inspections WHERE id = ? AND owner_id = ?').bind(id,user.id).first();}
 async function hydrate(env,row){
   const photos=await database(env).prepare('SELECT id, item_id, filename FROM photos WHERE inspection_id = ?').bind(row.id).all();
   return {id:row.id,revision:row.revision,createdAt:row.created_at,updatedAt:row.updated_at,...JSON.parse(row.document),photos:photos.results};
@@ -58,6 +58,9 @@ export default {
       if(path==='/' && request.method==='GET') return new Response(HTML,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin'}});
       if(!path.startsWith('/api/')) return new Response('Página não encontrada.',{status:404});
       if(!['GET','HEAD'].includes(request.method) && !sameOrigin(request)) return json({error:'Origem não permitida.'},403);
+      const authResponse=await handleAuth(request,env);if(authResponse)return authResponse;
+      const user=await authenticatedUser(request,env);
+      if(!user)return json({error:'Entre na sua conta para continuar.'},401);
       if(path==='/api/branding' && request.method==='GET'){
         const rows=await database(env).prepare('SELECT slot, filename, updated_at FROM brand_assets').all();
         return json({assets:rows.results});
@@ -70,9 +73,10 @@ export default {
           if(!previous)return json({error:'Imagem da empresa não cadastrada.'},404);
           const object=await env.BUCKET.get(previous.object_key);
           if(!object)return json({error:'Imagem indisponível.'},404);
-          return new Response(object.body,{headers:{'Content-Type':previous.mime,'Cache-Control':'private, max-age=3600','X-Content-Type-Options':'nosniff'}});
+          return new Response(object.body,{headers:{'Content-Type':previous.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
         }
         if(request.method==='POST'){
+          if(user.role!=='admin')return json({error:'A identidade visual é gerenciada pela RX.'},403);
           if(Number(request.headers.get('Content-Length'))>6*1024*1024)return json({error:'Use uma imagem com até 5 MB.'},413);
           const form=await request.formData(),file=form.get('file');
           if(!file||typeof file==='string'||!['image/png','image/jpeg','image/webp'].includes(file.type)||!file.size||file.size>5*1024*1024)return json({error:'Use um PNG, JPG ou WebP com até 5 MB.'},400);
@@ -90,30 +94,30 @@ export default {
       }
       if(path==='/api/inspections') {
         if(request.method==='GET') {
-          const rows=await database(env).prepare('SELECT * FROM inspections ORDER BY updated_at DESC LIMIT 150').all();
+          const rows=await database(env).prepare('SELECT * FROM inspections WHERE owner_id = ? ORDER BY updated_at DESC LIMIT 150').bind(user.id).all();
           return json(await Promise.all(rows.results.map(row=>hydrate(env,row))));
         }
         if(request.method==='POST') {
           if(Number(request.headers.get('Content-Length'))>1000000) return json({error:'Vistoria muito grande.'},413);
           const doc=validate(await request.json()); const id=crypto.randomUUID(),now=new Date().toISOString();
-          await database(env).prepare('INSERT INTO inspections (id, document, revision, created_at, updated_at) VALUES (?, ?, 1, ?, ?)').bind(id,JSON.stringify(doc),now,now).run();
+          await database(env).prepare('INSERT INTO inspections (id, owner_id, document, revision, created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?)').bind(id,user.id,JSON.stringify(doc),now,now).run();
           return json({id,revision:1,createdAt:now,updatedAt:now,...doc,photos:[]},201);
         }
       }
       const match=path.match(/^\/api\/inspections\/([\w-]+)$/);
       if(match && request.method==='PUT') {
         if(Number(request.headers.get('Content-Length'))>1000000) return json({error:'Vistoria muito grande.'},413);
-        const input=await request.json();const doc=validate(input); const row=await record(env,match[1]);
+        const input=await request.json();const doc=validate(input); const row=await record(env,match[1],user);
         if(!row) return json({error:'Vistoria não encontrada.'},404);
         if(!Number.isInteger(input.revision)) return json({error:'Versão da vistoria inválida.'},400);
         const now=new Date().toISOString();
-        const result=await database(env).prepare('UPDATE inspections SET document = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?').bind(JSON.stringify(doc),now,match[1],input.revision).run();
+        const result=await database(env).prepare('UPDATE inspections SET document = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND owner_id = ? AND revision = ?').bind(JSON.stringify(doc),now,match[1],user.id,input.revision).run();
         if(result.meta.changes!==1) return json({error:'Esta vistoria foi alterada em outra janela. Seus dados continuam nesta tela. Reabra a vistoria antes de continuar.'},409);
         return json({revision:input.revision+1,updatedAt:now});
       }
       const upload=path.match(/^\/api\/inspections\/([\w-]+)\/photos$/);
       if(upload && request.method==='POST') {
-        const row=await record(env,upload[1]);if(!row) return json({error:'Vistoria não encontrada.'},404);
+        const row=await record(env,upload[1],user);if(!row) return json({error:'Vistoria não encontrada.'},404);
         if(JSON.parse(row.document).completed) return json({error:'Reabra a vistoria para adicionar fotos.'},400);
         if(Number(request.headers.get('Content-Length'))>9*1024*1024) return json({error:'A foto deve ter até 8 MB.'},413);
         const form=await request.formData(),file=form.get('file'),itemId=form.get('itemId');
@@ -133,14 +137,14 @@ export default {
       }
       const photo=path.match(/^\/api\/photos\/([\w-]+)$/);
       if(photo) {
-        const row=await database(env).prepare('SELECT * FROM photos WHERE id = ?').bind(photo[1]).first();
+        const row=await database(env).prepare('SELECT p.* FROM photos p JOIN inspections i ON i.id = p.inspection_id WHERE p.id = ? AND i.owner_id = ?').bind(photo[1],user.id).first();
         if(!row) return json({error:'Foto não encontrada.'},404);
         if(request.method==='GET') {
           const object=await env.BUCKET.get(row.object_key);if(!object) return json({error:'Foto indisponível.'},404);
-          return new Response(object.body,{headers:{'Content-Type':row.mime,'Cache-Control':'private, max-age=3600','X-Content-Type-Options':'nosniff'}});
+          return new Response(object.body,{headers:{'Content-Type':row.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
         }
         if(request.method==='DELETE') {
-          const parent=await record(env,row.inspection_id);
+          const parent=await record(env,row.inspection_id,user);
           if(parent && JSON.parse(parent.document).completed) return json({error:'Reabra a vistoria para remover fotos.'},400);
           await env.BUCKET.delete(row.object_key);
           await database(env).prepare('DELETE FROM photos WHERE id = ?').bind(row.id).run();
@@ -149,6 +153,7 @@ export default {
       }
       return json({error:'Recurso não encontrado.'},404);
     }catch(error){
+      if(error instanceof AuthError)return json({error:error.message},error.status);
       console.error('Inspection request failed:',error.message);
       const known=/inválid|Informe|Preencha|Confira|Ambiente|checklist/.test(error.message);
       return json({error:known?error.message:'Não foi possível acessar suas vistorias. Tente novamente; suas alterações nesta tela foram mantidas.'},known?400:503);

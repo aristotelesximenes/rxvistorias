@@ -21,7 +21,7 @@ function renderBrandSettings(){
 document.addEventListener('click',async event=>{
   const button=event.target.closest('[data-action]');if(!button)return;
   if(button.dataset.action==='brand-settings'){
-    event.preventDefault();document.querySelector('#brand-upload-error').textContent='';
+    event.preventDefault();if(!S.user||S.user.role!=='admin')return;document.querySelector('#brand-upload-error').textContent='';
     try{await loadCompanyBrand();renderBrandSettings();document.querySelector('#brand-dialog').showModal();}catch(error){toast('Não foi possível carregar a identidade visual. Tente novamente.',true);}
   }
   if(button.dataset.action==='close-brand'){

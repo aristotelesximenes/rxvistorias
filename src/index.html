@@ -12,12 +12,18 @@
   <style>/* APP_STYLE */</style>
 </head>
 <body>
-  <div class="app-shell">
+  <main id="auth-screen" class="auth-screen" aria-label="Acesso ao RX Vistorias">
+    <section class="auth-intro"><div class="auth-rx">R<span>X</span><small>ENGENHARIA E PROJETOS</small></div><span class="eyebrow">RX VISTORIAS</span><h1>Seu olhar técnico.<br>Cada detalhe registrado.</h1><p>Vistorias de recebimento, registros fotográficos e relatórios em um só lugar.</p><div class="auth-intro-note"><span data-icon="shield"></span>Seu perfil. Suas vistorias.</div></section>
+    <section class="auth-panel"><div id="auth-content"><div class="loading"><span class="spinner"></span>Verificando seu acesso…</div></div><p class="auth-copyright">© 2026 RX Engenharia e Projetos.<br>Todos os direitos reservados.</p></section>
+  </main>
+  <div class="app-shell" hidden>
     <aside class="sidebar" aria-label="Navegação principal">
       <a class="brand" href="#" data-action="home" aria-label="RX Engenharia e Projetos — Minhas vistorias"><span class="rx-brand-name">RX<span>ENGENHARIA E PROJETOS</span></span></a>
       <div class="sidebar-label">VISTORIAS DE IMÓVEIS</div>
       <button class="nav-item active" data-action="home"><span data-icon="clipboard"></span>Minhas vistorias</button>
       <button class="sidebar-new" data-action="new"><span data-icon="plus"></span>Nova vistoria</button>
+      <button class="nav-item" data-action="profile"><span data-icon="edit"></span>Meu perfil</button>
+      <button class="nav-item" data-action="logout"><span data-icon="key"></span>Sair da conta</button>
       <button class="sidebar-brand-settings" data-action="brand-settings"><span data-icon="building"></span>Identidade visual</button>
       <div class="sidebar-divider"></div>
       <div class="sidebar-label">RECENTES</div>
@@ -25,11 +31,23 @@
       <div class="sidebar-foot"><div class="sidebar-copyright"></div></div>
     </aside>
     <div class="main-shell">
-      <header class="topbar"><div class="breadcrumb" id="breadcrumb">Minhas vistorias</div><div class="topbar-tools"><button class="mobile-brand-settings icon-button" data-action="brand-settings" aria-label="Identidade visual da empresa"><span data-icon="building"></span></button><div class="topbar-note"><span data-icon="shield"></span>Seu espaço privado</div></div></header>
+      <header class="topbar"><div class="breadcrumb" id="breadcrumb">Minhas vistorias</div><div class="topbar-tools"><button class="account-button" data-action="profile" aria-label="Abrir meu perfil"><span data-icon="edit"></span><span id="account-name">Meu perfil</span></button><button class="icon-button mobile-logout" data-action="logout" aria-label="Sair da conta"><span data-icon="key"></span></button><button class="mobile-brand-settings icon-button" data-action="brand-settings" aria-label="Identidade visual da empresa"><span data-icon="building"></span></button><div class="topbar-note"><span data-icon="shield"></span>Seu espaço privado</div></div></header>
       <main id="main"><div class="loading"><span class="spinner"></span>Carregando suas vistorias…</div></main>
       <footer class="app-copyright"></footer>
     </div>
   </div>
+  <dialog id="profile-dialog" aria-labelledby="profile-title">
+    <div class="dialog-head"><div><span class="eyebrow">SEU ESPAÇO PRIVADO</span><h2 id="profile-title">Meu perfil</h2></div><button type="button" class="icon-button" data-action="close-profile" aria-label="Fechar perfil"><span data-icon="x"></span></button></div>
+    <form id="profile-form"><div class="form-grid">
+      <label class="span-2">E-mail de acesso<input name="email" type="email" readonly autocomplete="username"></label>
+      <label class="span-2">Nome profissional <span class="required">*</span><input name="name" required minlength="2" maxlength="200" autocomplete="name"></label>
+      <label>CREA / UF<input name="crea" maxlength="120" placeholder="Número e UF do CREA"></label>
+      <label>RNP<input name="rnp" maxlength="120" placeholder="Registro nacional profissional"></label>
+      <label class="span-2">Telefone<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+    </div><p class="profile-help">Seu nome, CREA e RNP serão preenchidos nas novas vistorias. Os relatórios já criados mantêm os dados registrados na época.</p><p id="profile-error" class="form-error" role="alert"></p><div class="dialog-footer"><button type="submit" class="button primary" id="profile-save">Salvar perfil</button></div></form>
+    <details class="password-details"><summary>Alterar minha senha</summary><form id="password-form"><label>Senha atual<input name="currentPassword" type="password" required maxlength="128" autocomplete="current-password"></label><label>Nova senha<input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label><label>Confirmar nova senha<input name="confirmation" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label><p class="profile-help">Use pelo menos 12 caracteres. Ao alterar a senha, os outros aparelhos precisarão entrar novamente.</p><p id="password-error" class="form-error" role="alert"></p><div class="dialog-footer"><button type="submit" class="button secondary" id="password-save">Alterar senha</button></div></form></details>
+    <div class="profile-signout"><button type="button" class="button secondary" data-action="logout">Sair da conta</button></div>
+  </dialog>
   <dialog id="new-dialog" aria-labelledby="new-title">
     <form id="new-form">
       <div class="dialog-head"><div><span class="eyebrow">RECEBIMENTO DE IMÓVEL</span><h2 id="new-title">Nova vistoria</h2></div><button type="button" class="icon-button" aria-label="Fechar" data-action="close-new"><span data-icon="x"></span></button></div>

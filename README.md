@@ -12,6 +12,12 @@ Abra no Chrome, entre com sua conta e use o menu **Instalar aplicativo** ou **Ad
 
 ## Recursos
 
+- Cadastro com e-mail e senha, login e saída da conta.
+- Perfil profissional individual com nome, CREA/UF, RNP e telefone.
+- Vistorias e fotos isoladas por conta, com autorização em todas as APIs.
+- Nome, CREA e RNP preenchidos pelo perfil ao criar uma vistoria.
+- Alteração de senha com encerramento das sessões nos outros aparelhos.
+
 - Empreendimento, tipo de imóvel, endereço, área construída, cliente e construtora.
 - Identificação do responsável técnico, CREA, RNP e ART.
 - Checklist por ambiente com OK, NC e N/A.
@@ -20,7 +26,7 @@ Abra no Chrome, entre com sua conta e use o menu **Instalar aplicativo** ou **Ad
 - Até 10 referências normativas por não conformidade, com norma, edição, item/seção e fundamentação técnica, incluídas no relatório e no PDF. O responsável técnico registra as referências consultadas e confirma sua aplicabilidade; o app não atribui infrações automaticamente.
 - Câmera ao vivo, captura, prévia, confirmação e seleção de fotos da galeria.
 - Relatórios em PDF com registros fotográficos e conteúdo técnico.
-- Identidade visual: logo do relatório, imagem de identificação do app e rodapé.
+- Identidade visual RX compartilhada: logo do relatório, imagem do app e rodapé; alterações somente pelo titular da RX.
 - Copyright da RX no app e nos relatórios.
 
 ## Armazenamento
@@ -43,6 +49,7 @@ Aplique cada arquivo SQL de `drizzle/` uma única vez, na ordem, ao banco local.
 ```sh
 npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_lean_vector.sql
 npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_wonderful_screwball.sql
+npx wrangler d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_tidy_giant_girl.sql
 ```
 
 Inicie o app local:
@@ -53,9 +60,15 @@ npx wrangler dev --local --config dist/server/wrangler.json --persist-to .wrangl
 
 O navegador precisa de HTTPS, ou `localhost`, para acessar a câmera. A permissão é solicitada ao selecionar **Tirar foto**. O aplicativo pede apenas vídeo e encerra a câmera após capturar ou cancelar.
 
-`src/worker.js` implementa as APIs; `src/app.js` contém a interface; `src/camera.js` controla a captura; `src/brand.js` gerencia a identidade visual; `src/pdf.js` gera os relatórios. O build incorpora esses arquivos em `dist/server/index.js`.
+`src/auth-server.js` implementa autenticação e sessões; `src/auth.js` contém as telas de acesso e perfil; `src/worker.js` implementa as APIs; `src/app.js` contém a interface; `src/camera.js` controla a captura; `src/brand.js` gerencia a identidade visual; `src/pdf.js` gera os relatórios. O build incorpora esses arquivos em `dist/server/index.js`.
 
 As migrações de banco já aplicadas devem ser preservadas. Gere uma nova migração com `npm run db:generate` ao alterar o esquema em `db/schema.ts`.
+
+## Acesso e configuração do titular
+
+Quem receber o link público escolhe **Criar cadastro** no primeiro acesso ou **Entrar** para usar sua conta existente. O aplicativo não exige conta ChatGPT para esse cadastro. O e-mail é o identificador de acesso e não é verificado por envio de mensagem. Não há recuperação automática de senha por e-mail nesta versão.
+
+Consulte [docs/AUTENTICACAO.md](docs/AUTENTICACAO.md) para configuração segura da conta titular, migração das vistorias anteriores e detalhes de armazenamento de credenciais. Valores de produção ficam no ambiente de hospedagem, fora do código e do GitHub.
 
 ## Direitos autorais
 
